@@ -4,21 +4,29 @@ on:
   workflow_dispatch:
   
 jobs:
-  build_multiarch:
+  check:
     runs-on: ubuntu-latest
     steps:
-    
       - uses: oprypin/find-latest-tag@v1
         id: taginfo
         with:
           repository: keycloak/keycloak-containers
           releases-only: false
           
-      - name: Docker meta
-        id: meta
-        uses: docker/metadata-action@v3
+      - name: Scan Docker Repository
+        id: scan
+        uses: dhet/scan-docker-tags-action@v1.0.1
         with:
-          images: ghcr.io/${{ github.repository }}
+          image: mhart/alpine-node #ghcr.io/${{ github.repository }}
+          
+      - name: Print
+        run: "echo 'Recent updates: ${{ steps.scan.outputs.tags }}'"
+    
+  build_multiarch:
+    needs: check
+    runs-on: ubuntu-latest
+    if: contains(${{ needs.check.scan.outputs.tags }}, ${{ needs.check.taginfo.outputs.tag }})
+    steps:      
       
       - name: Check out Keycloak-Containers
         uses: actions/checkout@master
