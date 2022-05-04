@@ -13,6 +13,12 @@ jobs:
         with:
           repository: keycloak/keycloak-containers
           releases-only: false
+          
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v3
+        with:
+          images: ghcr.io/${{ github.repository }}
       
       - name: Check out Keycloak-Containers
         uses: actions/checkout@master
