@@ -39,4 +39,4 @@ jobs:
           file: ./server/Dockerfile
           context: ./server/
           tags: |
-            tags: ${{ steps.taginfo.outputs.tag }}, latest
+            ${{ steps.taginfo.outputs.tag }}, latest
