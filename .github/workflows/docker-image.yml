@@ -18,7 +18,7 @@ jobs:
         uses: dhet/scan-docker-tags-action@v1.0.1
         with:
           image: ${{ github.repository }}
-          repo-url: ghcr.io/${{ github.repository }}
+          repo-url: https://ghcr.io/opencirclepkgs/nginx-certbot-alpine
           
       - name: Print
         run: "echo 'Recent updates: ${{ steps.scan.outputs.tags }}'"
