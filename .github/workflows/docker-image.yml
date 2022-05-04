@@ -27,14 +27,10 @@ jobs:
       - uses: oprypin/find-latest-tag@v1
         id: taginfo
         with:
-          repository: octokit/rest.js  # The repository to scan.
+          repository: keycloak/keycloak-containers
           releases-only: false
 
-      - run: echo "Octokit is at version ${{ steps.taginfo.outputs.tag }}"
-          
-      - name: test print
-        run: |
-          echo ${{ steps.previoustag.outputs.tag }}
+      - run: echo "Keycloak is at version ${{ steps.taginfo.outputs.tag }}"
         
       - name: Docker meta
         id: meta
