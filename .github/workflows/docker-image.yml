@@ -17,7 +17,8 @@ jobs:
         id: scan
         uses: dhet/scan-docker-tags-action@v1.0.1
         with:
-          image: ghcr.io/${{ github.repository }}
+          image: ${{ github.repository }}
+          repo-url: ghcr.io/${{ github.repository }}
           
       - name: Print
         run: "echo 'Recent updates: ${{ steps.scan.outputs.tags }}'"
