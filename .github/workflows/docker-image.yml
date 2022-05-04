@@ -7,11 +7,18 @@ jobs:
   build_multiarch:
     runs-on: ubuntu-latest
     steps:
+    
+      - uses: oprypin/find-latest-tag@v1
+        id: taginfo
+        with:
+          repository: keycloak/keycloak-containers
+          releases-only: false
       
       - name: Check out Keycloak-Containers
         uses: actions/checkout@master
         with:
           repository: keycloak/keycloak-containers
+          ref: "${{ steps.taginfo.outputs.tag }}"
       
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v1
@@ -24,14 +31,6 @@ jobs:
       - name: Log in to registry
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
         
-      - uses: oprypin/find-latest-tag@v1
-        id: taginfo
-        with:
-          repository: keycloak/keycloak-containers
-          releases-only: false
-
-      - run: echo "Keycloak is at version ${{ steps.taginfo.outputs.tag }}"
-        
       - name: Docker meta
         id: meta
         uses: docker/metadata-action@v3
@@ -40,7 +39,7 @@ jobs:
           flavor: |
             latest=true
           tags: |
-            type=raw,{{sha}}
+            type=raw,{{ steps.taginfo.outputs.tag }}
           
       - name: build & push image
         uses: docker/build-push-action@v2
