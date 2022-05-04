@@ -24,9 +24,13 @@ jobs:
       - name: Log in to registry
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
         
-      - name: 'Get Previous tag'
-        id: previoustag
-        uses: "WyriHaximus/github-action-get-previous-tag@v1"
+      - uses: oprypin/find-latest-tag@v1
+        id: taginfo
+        with:
+          repository: octokit/rest.js  # The repository to scan.
+          releases-only: false
+
+      - run: echo "Octokit is at version ${{ steps.taginfo.outputs.tag }}"
           
       - name: test print
         run: |
