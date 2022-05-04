@@ -30,16 +30,6 @@ jobs:
       
       - name: Log in to registry
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-        
-      - name: Docker meta
-        id: meta
-        uses: docker/metadata-action@v3
-        with:
-          images: ghcr.io/${{ github.repository }}
-          flavor: |
-            latest=true
-          tags: |
-            type=raw,{{ steps.taginfo.outputs.tag }}
           
       - name: build & push image
         uses: docker/build-push-action@v2
@@ -49,4 +39,4 @@ jobs:
           file: ./server/Dockerfile
           context: ./server/
           tags: |
-            tags: ${{ steps.meta.outputs.tags }}
+            tags: ${{ steps.taginfo.outputs.tag }}, latest
