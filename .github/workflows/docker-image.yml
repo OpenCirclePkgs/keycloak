@@ -24,17 +24,13 @@ jobs:
       - name: Log in to registry
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
         
-      - name: Get Latest Release
-        id: latest_version
-        uses: abatilo/release-info-action@v1.3.0
-        with:
-          owner: keycloak
-          repo: keycloak-containers
+      - name: 'Get Previous tag'
+        id: previoustag
+        uses: "WyriHaximus/github-action-get-previous-tag@v1"
           
       - name: test print
         run: |
-          echo ${{ steps.latest_version.outputs.latest_tag }},
-          echo ${{ steps.latest_version.outputs.latest_tag_published_at }}
+          echo ${{ steps.previoustag.outputs.tag }}
         
       - name: Docker meta
         id: meta
