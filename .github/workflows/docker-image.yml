@@ -23,7 +23,8 @@ jobs:
           
       - run: "echo '${{ steps.get_latest_release.outputs.data }}'"
       - run: "echo '${{ steps.get_latest_release.outputs.data[0] }}'"
-      - run: "echo '${{ steps.get_latest_release.outputs.data[1] }}'"
+      - run: "echo '${{ steps.get_latest_release.outputs.data[0].id }}'"
+      - run: "echo '${{ steps.get_latest_release.outputs.data.id }}'"
       - run: "echo contains(${{ steps.get_latest_release.outputs.data[0].metadata.container.tags }}, ${{ steps.taginfo.outputs.tag }})"
     
   build_multiarch:
