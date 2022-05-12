@@ -25,6 +25,7 @@ jobs:
       - run: "echo '${{ steps.get_latest_release.outputs.data[0] }}'"
       - run: "echo '${{ steps.get_latest_release.outputs.data[0].id }}'"
       - run: "echo '${{ steps.get_latest_release.outputs.data.id }}'"
+      - run: "echo fromJSON(${{ steps.get_latest_release.outputs.data }})[0].id"
       - run: "echo contains(${{ steps.get_latest_release.outputs.data[0].metadata.container.tags }}, ${{ steps.taginfo.outputs.tag }})"
     
   build_multiarch:
