@@ -13,15 +13,15 @@ jobs:
           repository: keycloak/keycloak-containers
           releases-only: false
           
-      - name: Scan Docker Repository
-        id: scan
-        uses: dhet/scan-docker-tags-action@v1.0.1
+      - uses: octokit/request-action@v2.x
+        id: get_latest_release
         with:
-          image: docker-keycloak #${{ github.repository }}
-          repo-url: https://ghcr.io/opencirclepkgs/keycloak
-          
-      - name: Print
-        run: "echo 'Recent updates: ${{ steps.scan.outputs.tags }}'"
+          route: GET /orgs/OpenCirclePkgs/packages/container/docker-keycloak/versions
+          owner: octokit
+          repo: request-action
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - run: "echo latest release: ${{ steps.get_latest_release.outputs.data }}"
     
   build_multiarch:
     needs: check
