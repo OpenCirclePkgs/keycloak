@@ -23,7 +23,7 @@ jobs:
   build_multiarch:
     needs: check
     runs-on: ubuntu-latest
-    if: contains(${{ needs.check.get_latest_release.outputs.data.tags }}, ${{ needs.check.taginfo.outputs.tag }})
+    if: contains(${{ needs.check.get_latest_release.outputs.data[0].metadata.container.tags }}, ${{ needs.check.taginfo.outputs.tag }})
     steps:      
       
       - name: Check out Keycloak-Containers
