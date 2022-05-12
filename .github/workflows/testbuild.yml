@@ -2,8 +2,6 @@ name: testbuild keycloak
 
 on:
   workflow_dispatch:
-  schedule:
-    - cron: "0 0 * * *"
 
 jobs:
   build_multiarch:
@@ -34,4 +32,4 @@ jobs:
           file: ./server/Dockerfile
           context: ./server/
           tags: |
-            ghcr.io/asklios/docker-keycloak:latest
+            ghcr.io/opencirklepkgs/docker-keycloak:latest
