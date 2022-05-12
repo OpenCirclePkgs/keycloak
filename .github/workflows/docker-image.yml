@@ -22,12 +22,9 @@ jobs:
           
       - run: "echo '${{ steps.get_latest_release.outputs.data }}'"
       
-      - id: result
-        uses: gr2m/get-json-paths-action@v1.x
-        with:
-          json: ${{ steps.get_latest_release.outputs.data }}
-          tags: "metadata.container.tags"
-      - run: "echo ${{ steps.result.outputs.tags }}"
+      - run: |
+          tags = fromJSON(${{ steps.result.outputs.tags }}),
+          echo tags
     
   build_multiarch:
     needs: check
