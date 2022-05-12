@@ -19,7 +19,15 @@ jobs:
           route: GET /orgs/OpenCirclePkgs/packages/container/docker-keycloak/versions
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - run: "echo ${{ steps.get_latest_release.outputs.data[0] }}"
+          
+      - run: "echo ${{ steps.get_latest_release.outputs.data }}"
+      
+      - id: result
+        uses: gr2m/get-json-paths-action@v1.x
+        with:
+          json: ${{ steps.get_latest_release.outputs.data }}
+          tags: "metadata.container.tags"
+      - run: "echo ${{ steps.result.outputs.tags }}"
     
   build_multiarch:
     needs: check
