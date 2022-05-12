@@ -29,7 +29,7 @@ jobs:
     
       - run: "echo ${{ needs.check.get_latest_release.outputs.data }}"
       - run: "echo ${{ needs.check.get_latest_release.outputs.data[0] }}"
-      - run: "echo ${{ needs.check.get_latest_release.outputs.data.[0] }}"
+      - run: "echo ${{ needs.check.get_latest_release.outputs.data[1] }}"
       - run: "echo contains(${{ needs.check.get_latest_release.outputs.data[0].metadata.container.tags }}, ${{ needs.check.taginfo.outputs.tag }})"
       
       - name: Check out Keycloak-Containers
