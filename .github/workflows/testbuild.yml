@@ -32,4 +32,4 @@ jobs:
           file: ./server/Dockerfile
           context: ./server/
           tags: |
-            ghcr.io/opencirclepkgs/docker-keycloak:latest
+            ghcr.io/opencirclepkgs/docker-keycloak:latest, ghcr.io/opencirclepkgs/docker-keycloak:test1.2.3
