@@ -16,9 +16,9 @@ jobs:
       - uses: octokit/request-action@v2.x
         id: get_latest_release
         with:
-          route: GET /orgs/OpenCirclePkgs/packages/container/docker-keycloak/versions
-          owner: octokit
-          repo: request-action
+          route: GET /orgs/{owner}/packages/container/{package}/versions
+          owner: OpenCirclePkgs
+          package: docker-keycloak
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - run: "echo latest release: ${{ steps.get_latest_release.outputs.data }}"
