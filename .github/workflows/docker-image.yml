@@ -19,7 +19,7 @@ jobs:
           route: GET /orgs/OpenCirclePkgs/packages/container/docker-keycloak/versions
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - run: "echo ${{ steps.get_latest_release.outputs.data[0].metadata.container.tags }}"
+      - run: "echo ${{ steps.get_latest_release.outputs.data[0] }}"
     
   build_multiarch:
     needs: check
