@@ -24,7 +24,11 @@ jobs:
     needs: check
     runs-on: ubuntu-latest
     if: contains(${{ needs.check.get_latest_release.outputs.data[0].metadata.container.tags }}, ${{ needs.check.taginfo.outputs.tag }})
-    steps:      
+    steps:
+    
+    
+      - run: "echo ${{ needs.check.get_latest_release.outputs.data[0].metadata.container.tags }}"
+      - run: "echo contains(${{ needs.check.get_latest_release.outputs.data[0].metadata.container.tags }}, ${{ needs.check.taginfo.outputs.tag }})"
       
       - name: Check out Keycloak-Containers
         uses: actions/checkout@master
