@@ -47,10 +47,16 @@ jobs:
           echo "No new releases found. Exiting."
           exit 0
         fi
+
+    - name: lowercase REPO
+      run: echo "REPO=${GITHUB_REPOSITORY,,}" >> ${GITHUB_ENV}
+          
   build:
     needs: check-release
     if: ${{ needs.check-release.outputs.new_release == 'true' }} 
     runs-on: ubuntu-latest
+    env:
+      CURRENT_RELEASE: ${{ needs.check-release.outputs.current_release }}
 
     steps:
       - name: Check out Keycloak-Containers
@@ -69,19 +75,13 @@ jobs:
       - name: Log in to registry
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
-      - name: downcase REPO
-        run: |
-          echo "REPO=${GITHUB_REPOSITORY,,}" >>${GITHUB_ENV}
-          
       - name: build & push image (keycloak:latest)
         uses: docker/build-push-action@v2
-        env:
-          CURRENT_RELEASE: ${{ needs.check-release.outputs.current_release }}
         with:
           platforms: linux/amd64,linux/arm64
           push: true
           file: ./quarkus/container/Dockerfile
           context: .
           tags: |
-            ghcr.io/${{ github.repository,, }}:latest, ghcr.io/${{ github.repository,, }}:$CURRENT_RELEASE
+            ghcr.io/${{ env.REPO }}:latest, ghcr.io/${{ env.REPO }}:$CURRENT_RELEASE
   
