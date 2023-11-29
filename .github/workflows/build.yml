@@ -80,5 +80,5 @@ jobs:
           file: ./quarkus/container/Dockerfile
           context: .
           tags: |
-            ghcr.io/opencirclepkgs/keycloak:latest, "ghcr.io/opencirclepkgs/keycloak:${{ env.CURRENT_RELEASE }}"
+            ghcr.io/opencirclepkgs/keycloak:latest, ghcr.io/opencirclepkgs/keycloak:${{ env.CURRENT_RELEASE }}
   
