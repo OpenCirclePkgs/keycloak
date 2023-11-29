@@ -79,6 +79,7 @@ jobs:
           push: true
           file: ./quarkus/container/Dockerfile
           context: ./quarkus/container/
+          build-args: KEYCLOAK_VERSION=${{ env.CURRENT_RELEASE }}
           tags: |
             ghcr.io/opencirclepkgs/keycloak:latest, ghcr.io/opencirclepkgs/keycloak:${{ env.CURRENT_RELEASE }}
   
