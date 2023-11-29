@@ -38,19 +38,20 @@ jobs:
 
         if [ "$latest_release" != "${{ steps.current.outputs.current_release }}" ]; then
           echo "New release found."
-          echo "::set-output name=new_release::true"
+          echo "new_release=true" >> $GITHUB_OUTPUT
+          echo "current_release=$latest_release" >> $GITHUB_OUTPUT
         else
           echo "No new releases found. Exiting."
           exit 0
         fi
   build:
     needs: check-release
-    #if: ${{ needs.check-release.release.outputs.new_release == 'true' }}
+    if: ${{ needs.check-release.outputs.new_release == 'true' }}
     runs-on: ubuntu-latest
 
     steps:
       - name: test
         run: |
-          echo "${{ needs.check-release.current.outputs.current_release }}"
+          echo "${{ needs.check-release.outputs.current_release }}"
 
   
