@@ -55,6 +55,6 @@ jobs:
     steps:
       - name: test
         run: |
-          echo ${{ needs.check-release.outputs.current_release }}
+          echo ${{ needs.check-release.outputs }}
 
   
