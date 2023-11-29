@@ -56,8 +56,6 @@ jobs:
       - env:
           NEW_RELEASE: ${{ needs.check-release.outputs.new_release }}
           CURRENT_RELEASE: ${{ needs.check-release.outputs.current_release }}
-      
-      - name: test
         run: |
           echo "$NEW_RELEASE $CURRENT_RELEASE"
 
