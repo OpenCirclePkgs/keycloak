@@ -79,5 +79,5 @@ jobs:
           file: ./quarkus/container/Dockerfile
           context: .
           tags: |
-            ghcr.io/opencirclepkgs/${{ github.repository}}:latest, ghcr.io/opencirclepkgs/${{ github.repository}}:$CURRENT_RELEASE
+            ghcr.io/$(echo "${{ github.repository }}" | tr 'A-Z' 'a-z'):latest, ghcr.io/$(echo "${{ github.repository }}" | tr 'A-Z' 'a-z'):$CURRENT_RELEASE
   
