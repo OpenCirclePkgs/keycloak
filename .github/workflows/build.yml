@@ -9,8 +9,8 @@ jobs:
   check-release:
     runs-on: ubuntu-latest
     outputs:
-      new_release: ${{steps.release.outputs.new_release}}
-      current_release: ${{steps.current.outputs.current_release}}
+      new_release: ${{ steps.release.outputs.new_release }}
+      current_release: ${{ steps.current.outputs.current_release }}
 
     steps:
     - name: Login to GitHub Container Registry
@@ -31,7 +31,7 @@ jobs:
         current_release=${current_release:-""}
 
         echo "Current release in the container repository: $current_release"
-        echo ""::set-output name=current_release::$current_release""
+        echo "current_release=$current_release" >> $GITHUB_OUTPUT
 
     - name: Check for new releases
       id: release
