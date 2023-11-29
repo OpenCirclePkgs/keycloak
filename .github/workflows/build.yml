@@ -81,6 +81,7 @@ jobs:
           context: ./quarkus/container/
           build-args: | 
             KEYCLOAK_VERSION=${{ env.CURRENT_RELEASE }}
+            KEYCLOAK_DIST=https://github.com/keycloak/keycloak/releases/download/${{ env.CURRENT_RELEASE }}/keycloak-${{ env.CURRENT_RELEASE }}.tar.gz
           tags: |
             ghcr.io/opencirclepkgs/keycloak:latest, ghcr.io/opencirclepkgs/keycloak:${{ env.CURRENT_RELEASE }}
   
