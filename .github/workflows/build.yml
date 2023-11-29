@@ -78,7 +78,7 @@ jobs:
           platforms: linux/amd64,linux/arm64
           push: true
           file: ./quarkus/container/Dockerfile
-          context: .
+          context: ./quarkus/container/
           tags: |
             ghcr.io/opencirclepkgs/keycloak:latest, ghcr.io/opencirclepkgs/keycloak:${{ env.CURRENT_RELEASE }}
   
