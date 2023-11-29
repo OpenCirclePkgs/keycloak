@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       new_release: ${{ steps.release.outputs.new_release }}
-      current_release: ${{ steps.current.outputs.current_release }}
+      current_release: ${{ steps.release.outputs.current_release }}
 
     steps:
     - name: Login to GitHub Container Registry
@@ -53,8 +53,12 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - env:
+          NEW_RELEASE: ${{ needs.check-release.outputs.new_release }}
+          CURRENT_RELEASE: ${{ needs.check-release.outputs.current_release }}
+      
       - name: test
         run: |
-          echo ${{ needs.check-release.outputs }}
+          echo "$NEW_RELEASE $CURRENT_RELEASE"
 
   
