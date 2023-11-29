@@ -11,6 +11,7 @@ jobs:
     outputs:
       new_release: ${{ steps.release.outputs.new_release }}
       current_release: ${{ steps.release.outputs.current_release }}
+      repo: ${{ steps.lower.outputs.repo }}
 
     steps:
     - name: Login to GitHub Container Registry
@@ -49,14 +50,13 @@ jobs:
         fi
 
     - name: lowercase REPO
-      run: echo "REPO=${GITHUB_REPOSITORY,,}" >> ${GITHUB_ENV}
+      id: lower
+      run: echo "repo=${GITHUB_REPOSITORY,,}" >> $GITHUB_OUTPUT
           
   build:
     needs: check-release
     if: ${{ needs.check-release.outputs.new_release == 'true' }} 
     runs-on: ubuntu-latest
-    env:
-      CURRENT_RELEASE: ${{ needs.check-release.outputs.current_release }}
 
     steps:
       - name: Check out Keycloak-Containers
@@ -77,11 +77,14 @@ jobs:
 
       - name: build & push image (keycloak:latest)
         uses: docker/build-push-action@v2
+        env:
+          CURRENT_RELEASE: ${{ needs.check-release.outputs.current_release }}
+          REPO: ${{ needs.check-release.outputs.repo }}
         with:
           platforms: linux/amd64,linux/arm64
           push: true
           file: ./quarkus/container/Dockerfile
           context: .
           tags: |
-            ghcr.io/${{ env.REPO }}:latest, ghcr.io/${{ env.REPO }}:$CURRENT_RELEASE
+            ghcr.io/$REPO:latest, ghcr.io/$REPO:$CURRENT_RELEASE
   
