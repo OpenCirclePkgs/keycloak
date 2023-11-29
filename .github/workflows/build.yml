@@ -51,7 +51,7 @@ jobs:
 
     - name: lowercase REPO
       id: lower
-      run: echo "repo=${GITHUB_REPOSITORY,,}" >> $GITHUB_OUTPUT
+      run: echo "repo=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
           
   build:
     needs: check-release
