@@ -74,12 +74,11 @@ jobs:
         uses: docker/build-push-action@v2
         env:
           CURRENT_RELEASE: ${{ needs.check-release.outputs.current_release }}
-          REPO: ${{ needs.check-release.outputs.repo }}
         with:
           platforms: linux/amd64,linux/arm64
           push: true
           file: ./quarkus/container/Dockerfile
           context: .
           tags: |
-            ghcr.io/opencirclepkgs/keycloak:latest, ghcr.io/opencirclepkgs/keycloak:$CURRENT_RELEASE
+            ghcr.io/opencirclepkgs/keycloak:latest, ghcr.io/opencirclepkgs/keycloak:"$CURRENT_RELEASE"
   
