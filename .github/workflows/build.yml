@@ -1,0 +1,55 @@
+name: Check for new Release
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 20 * * *'  # Run every day
+
+jobs:
+  check-release:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Login to GitHub Container Registry
+      run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+    - name: Get current release from container repository
+      id: current
+      run: |
+        repo_owner=${{ github.repository_owner }}
+        repo_name=${{ github.repository }}
+        package_type="container"
+        package_name=${{ github.repository | lower}}
+
+        current_release=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+          "https://api.github.com/orgs/$repo_owner/packages/$package_type/$package_name/versions" | jq -r '.[0].metadata.container.tags[0]' | sed 's/-arm64//')
+
+        # Set to empty string if no container exists yet
+        current_release=${current_release:-""}
+
+        echo "Current release in the container repository: $current_release"
+        echo ""::set-output name=current_release::$current_release""
+
+    - name: Check for new releases
+      run: |
+        latest_release=$(curl -s https://api.github.com/repos/keycloak/keycloak/releases/latest | jq -r '.tag_name')
+        echo "latest release: $latest_release"
+
+        if [ "$latest_release" != "${{ steps.current.outputs.current_release }}" ]; then
+          echo "New release found. Building and pushing Docker container..."
+          echo "::set-output name=new_release::true"
+        else
+          echo "No new releases found. Exiting."
+          exit 0
+        fi
+  build:
+    needs: check-release
+    if: ${{ needs.check-release.outputs.new_release == 'true' }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: test
+        run: |
+          echo "${{ needs.check-release.outputs.current_release }}"
+
+  
