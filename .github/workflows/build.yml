@@ -31,12 +31,13 @@ jobs:
         echo ""::set-output name=current_release::$current_release""
 
     - name: Check for new releases
+      id: release
       run: |
         latest_release=$(curl -s https://api.github.com/repos/keycloak/keycloak/releases/latest | jq -r '.tag_name')
         echo "latest release: $latest_release"
 
         if [ "$latest_release" != "${{ steps.current.outputs.current_release }}" ]; then
-          echo "New release found. Building and pushing Docker container..."
+          echo "New release found."
           echo "::set-output name=new_release::true"
         else
           echo "No new releases found. Exiting."
@@ -44,12 +45,12 @@ jobs:
         fi
   build:
     needs: check-release
-    if: ${{ needs.check-release.outputs.new_release == 'true' }}
+    if: ${{ needs.check-release.release.outputs.new_release == 'true' }}
     runs-on: ubuntu-latest
 
     steps:
       - name: test
         run: |
-          echo "${{ needs.check-release.outputs.current_release }}"
+          echo "${{ needs.check-release.current.outputs.current_release }}"
 
   
