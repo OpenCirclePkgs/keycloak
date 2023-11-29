@@ -19,7 +19,7 @@ jobs:
         repo_owner=${{ github.repository_owner }}
         repo_name=${{ github.repository }}
         package_type="container"
-        package_name=${{ github.repository | lower}}
+        package_name=${{ github.repository}}
 
         current_release=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
           "https://api.github.com/orgs/$repo_owner/packages/$package_type/$package_name/versions" | jq -r '.[0].metadata.container.tags[0]' | sed 's/-arm64//')
