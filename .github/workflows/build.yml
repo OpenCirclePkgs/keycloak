@@ -1,56 +1,68 @@
-name: Check for new Release
+name: Build Keycloak
 
 on:
   workflow_dispatch:
   schedule:
-    - cron: '0 20 * * *'
+    - cron: "0 20 * * *"
 
 permissions:
   contents: read
   packages: write
 
+env:
+  IMAGE: ghcr.io/opencirclepkgs/keycloak
+  UPSTREAM_REPO: keycloak/keycloak
+
 jobs:
   check-release:
     runs-on: ubuntu-latest
     outputs:
-      new_release: ${{ steps.release.outputs.new_release }}
-      current_release: ${{ steps.release.outputs.current_release }}
-
+      new_release: ${{ steps.decide.outputs.new_release }}
+      keycloak_version: ${{ steps.upstream.outputs.keycloak_version }}
+      upstream_tag: ${{ steps.upstream.outputs.upstream_tag }}
     steps:
-      - name: Get current release from container repository
+      - name: Get latest upstream release tag
+        id: upstream
+        run: |
+          set -euo pipefail
+
+          upstream_tag="$(curl -fsSL https://api.github.com/repos/${UPSTREAM_REPO}/releases/latest | jq -r '.tag_name')"
+          # Normalize: some projects use v-prefixed tags; Keycloak artifacts are keycloak-<version>.tar.gz
+          keycloak_version="${upstream_tag#v}"
+
+          echo "upstream_tag=$upstream_tag" >> "$GITHUB_OUTPUT"
+          echo "keycloak_version=$keycloak_version" >> "$GITHUB_OUTPUT"
+
+      - name: Get currently published version tag from GHCR (best-effort)
         id: current
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
 
-          repo_owner="${{ github.repository_owner }}"
-          package_type="container"
-          package_name="${{ github.event.repository.name }}"
-
-          # org endpoint; if you publish under a user, switch to /users/$repo_owner/...
-          current_release="$(
+          # Query tags for the package; keep this simple and tolerant.
+          # If it fails (first run / API quirks), fall back to empty and force a build.
+          current_version="$(
             curl -fsSL \
-              -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+              -H "Authorization: Bearer ${GH_TOKEN}" \
               -H "Accept: application/vnd.github+json" \
-              "https://api.github.com/orgs/$repo_owner/packages/$package_type/$package_name/versions" \
-            | jq -r '.[0].metadata.container.tags[0] // empty' \
-            | sed 's/-arm64//'
+              "https://ghcr.io/v2/opencirclepkgs/keycloak/tags/list" \
+            | jq -r '.tags[]?' \
+            | grep -E '^[0-9]+\.[0-9]+\.[0-9]+' \
+            | sort -V \
+            | tail -n1 \
+            || true
           )"
 
-          echo "current_release=${current_release}" >> "$GITHUB_OUTPUT"
+          echo "current_version=$current_version" >> "$GITHUB_OUTPUT"
 
-      - name: Check for new releases
-        id: release
+      - name: Decide whether to build
+        id: decide
         run: |
           set -euo pipefail
 
-          latest_release="$(
-            curl -fsSL https://api.github.com/repos/keycloak/keycloak/releases/latest \
-            | jq -r '.tag_name'
-          )"
-
-          if [ "$latest_release" != "${{ steps.current.outputs.current_release }}" ]; then
+          if [ "${{ steps.upstream.outputs.keycloak_version }}" != "${{ steps.current.outputs.current_version }}" ]; then
             echo "new_release=true" >> "$GITHUB_OUTPUT"
-            echo "current_release=$latest_release" >> "$GITHUB_OUTPUT"
           else
             echo "new_release=false" >> "$GITHUB_OUTPUT"
           fi
@@ -59,16 +71,15 @@ jobs:
     needs: check-release
     if: ${{ needs.check-release.outputs.new_release == 'true' }}
     runs-on: ubuntu-latest
-
     steps:
-      - name: Check out Keycloak (pinned to release tag)
+      - name: Check out official Keycloak source (pinned to release tag)
         uses: actions/checkout@v4
         with:
-          repository: keycloak/keycloak
-          ref: ${{ needs.check-release.outputs.current_release }}
+          repository: ${{ env.UPSTREAM_REPO }}
+          ref: ${{ needs.check-release.outputs.upstream_tag }}
           fetch-depth: 1
 
-      - name: Set up QEMU
+      - name: Set up QEMU (multi-arch)
         uses: docker/setup-qemu-action@v3
         with:
           platforms: linux/amd64,linux/arm64
@@ -76,27 +87,36 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Log in to GHCR
+      - name: Login to GHCR
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build & push
+      - name: Sanity-check upstream tarball URL (fail early if wrong)
+        env:
+          KEYCLOAK_VERSION: ${{ needs.check-release.outputs.keycloak_version }}
+        run: |
+          set -euo pipefail
+          url="https://github.com/keycloak/keycloak/releases/download/${KEYCLOAK_VERSION}/keycloak-${KEYCLOAK_VERSION}.tar.gz"
+          curl -fIsSL "$url" >/dev/null
+
+      - name: Build & push (with layer cache)
         uses: docker/build-push-action@v6
         with:
+          context: ./quarkus/container/
+          file: ./quarkus/container/Dockerfile
+
           platforms: linux/amd64,linux/arm64
           push: true
-          file: ./quarkus/container/Dockerfile
-          context: ./quarkus/container/
           cache-from: type=gha,scope=keycloak
           cache-to: type=gha,mode=max,scope=keycloak
 
           build-args: |
-            KEYCLOAK_VERSION=${{ needs.check-release.outputs.current_release }}
-            KEYCLOAK_DIST=https://github.com/keycloak/keycloak/releases/download/${{ needs.check-release.outputs.current_release }}/keycloak-${{ needs.check-release.outputs.current_release }}.tar.gz
+            KEYCLOAK_VERSION=${{ needs.check-release.outputs.keycloak_version }}
+            KEYCLOAK_DIST=https://github.com/keycloak/keycloak/releases/download/${{ needs.check-release.outputs.keycloak_version }}/keycloak-${{ needs.check-release.outputs.keycloak_version }}.tar.gz
 
           tags: |
-            ghcr.io/opencirclepkgs/keycloak:latest
-            ghcr.io/opencirclepkgs/keycloak:${{ needs.check-release.outputs.current_release }}
+            ${{ env.IMAGE }}:latest
+            ${{ env.IMAGE }}:${{ needs.check-release.outputs.keycloak_version }}
