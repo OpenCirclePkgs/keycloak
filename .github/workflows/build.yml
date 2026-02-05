@@ -1,4 +1,4 @@
-name: Build Keycloak
+name: Build Keycloak to GHCR
 
 on:
   workflow_dispatch:
@@ -17,69 +17,57 @@ jobs:
   check-release:
     runs-on: ubuntu-latest
     outputs:
-      new_release: ${{ steps.decide.outputs.new_release }}
-      keycloak_version: ${{ steps.upstream.outputs.keycloak_version }}
+      build: ${{ steps.decide.outputs.build }}
       upstream_tag: ${{ steps.upstream.outputs.upstream_tag }}
+      keycloak_version: ${{ steps.upstream.outputs.keycloak_version }}
     steps:
       - name: Get latest upstream release tag
         id: upstream
         run: |
           set -euo pipefail
-
-          upstream_tag="$(curl -fsSL https://api.github.com/repos/${UPSTREAM_REPO}/releases/latest | jq -r '.tag_name')"
-          # Normalize: some projects use v-prefixed tags; Keycloak artifacts are keycloak-<version>.tar.gz
+          upstream_tag="$(curl -fsSL "https://api.github.com/repos/${UPSTREAM_REPO}/releases/latest" | jq -r '.tag_name')"
           keycloak_version="${upstream_tag#v}"
-
           echo "upstream_tag=$upstream_tag" >> "$GITHUB_OUTPUT"
           echo "keycloak_version=$keycloak_version" >> "$GITHUB_OUTPUT"
 
-      - name: Get currently published version tag from GHCR (best-effort)
-        id: current
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          set -euo pipefail
-
-          # Query tags for the package; keep this simple and tolerant.
-          # If it fails (first run / API quirks), fall back to empty and force a build.
-          current_version="$(
-            curl -fsSL \
-              -H "Authorization: Bearer ${GH_TOKEN}" \
-              -H "Accept: application/vnd.github+json" \
-              "https://ghcr.io/v2/opencirclepkgs/keycloak/tags/list" \
-            | jq -r '.tags[]?' \
-            | grep -E '^[0-9]+\.[0-9]+\.[0-9]+' \
-            | sort -V \
-            | tail -n1 \
-            || true
-          )"
-
-          echo "current_version=$current_version" >> "$GITHUB_OUTPUT"
-
-      - name: Decide whether to build
+      - name: Check if this version already exists in GHCR
         id: decide
+        env:
+          VERSION: ${{ steps.upstream.outputs.keycloak_version }}
         run: |
           set -euo pipefail
 
-          if [ "${{ steps.upstream.outputs.keycloak_version }}" != "${{ steps.current.outputs.current_version }}" ]; then
-            echo "new_release=true" >> "$GITHUB_OUTPUT"
+          # If the tag exists, skip. If not, build.
+          if curl -fsSL "https://ghcr.io/v2/opencirclepkgs/keycloak/manifests/${VERSION}" >/dev/null; then
+            echo "build=false" >> "$GITHUB_OUTPUT"
           else
-            echo "new_release=false" >> "$GITHUB_OUTPUT"
+            echo "build=true" >> "$GITHUB_OUTPUT"
           fi
 
   build:
     needs: check-release
-    if: ${{ needs.check-release.outputs.new_release == 'true' }}
+    if: ${{ needs.check-release.outputs.build == 'true' }}
     runs-on: ubuntu-latest
+
     steps:
-      - name: Check out official Keycloak source (pinned to release tag)
+      - name: Checkout official Keycloak repo (pinned to release tag)
         uses: actions/checkout@v4
         with:
           repository: ${{ env.UPSTREAM_REPO }}
           ref: ${{ needs.check-release.outputs.upstream_tag }}
           fetch-depth: 1
 
-      - name: Set up QEMU (multi-arch)
+      - name: Download Keycloak distribution into build context
+        env:
+          VERSION: ${{ needs.check-release.outputs.keycloak_version }}
+        run: |
+          set -euo pipefail
+          dist="quarkus/container/keycloak-${VERSION}.tar.gz"
+          url="https://github.com/keycloak/keycloak/releases/download/${VERSION}/keycloak-${VERSION}.tar.gz"
+          curl -fL --retry 5 --retry-connrefused --retry-delay 2 "$url" -o "$dist"
+          test -s "$dist"
+
+      - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
         with:
           platforms: linux/amd64,linux/arm64
@@ -94,20 +82,11 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Sanity-check upstream tarball URL (fail early if wrong)
-        env:
-          KEYCLOAK_VERSION: ${{ needs.check-release.outputs.keycloak_version }}
-        run: |
-          set -euo pipefail
-          url="https://github.com/keycloak/keycloak/releases/download/${KEYCLOAK_VERSION}/keycloak-${KEYCLOAK_VERSION}.tar.gz"
-          curl -fIsSL "$url" >/dev/null
-
-      - name: Build & push (with layer cache)
+      - name: Build & push multi-arch (with layer cache)
         uses: docker/build-push-action@v6
         with:
           context: ./quarkus/container/
           file: ./quarkus/container/Dockerfile
-
           platforms: linux/amd64,linux/arm64
           push: true
           cache-from: type=gha,scope=keycloak
@@ -115,7 +94,7 @@ jobs:
 
           build-args: |
             KEYCLOAK_VERSION=${{ needs.check-release.outputs.keycloak_version }}
-            KEYCLOAK_DIST=https://github.com/keycloak/keycloak/releases/download/${{ needs.check-release.outputs.keycloak_version }}/keycloak-${{ needs.check-release.outputs.keycloak_version }}.tar.gz
+            KEYCLOAK_DIST=keycloak-${{ needs.check-release.outputs.keycloak_version }}.tar.gz
 
           tags: |
             ${{ env.IMAGE }}:latest
